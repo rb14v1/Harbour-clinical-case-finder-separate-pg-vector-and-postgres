@@ -4,7 +4,7 @@
 # patched release.
 Django>=5.2.11,<5.3
 djangorestframework>=3.16.1,<4
-djangorestframework-simplejwt==5.3.1
+djangorestframework-simplejwt==5.5.1
 psycopg2-binary==2.9.9
 django-cors-headers==4.4.0
 django-filter==24.3
