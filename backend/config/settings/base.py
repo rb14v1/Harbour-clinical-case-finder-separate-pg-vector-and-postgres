@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
     "django_filters",
+    "mozilla_django_oidc",
     # local apps
     "apps.accounts",
     "apps.patients",
@@ -152,6 +153,62 @@ SIMPLE_JWT = {
     "USER_ID_FIELD": "id",
     "USER_ID_CLAIM": "user_id",
 }
+
+# ---------------------------------------------------------------------------
+# OIDC sign-in via Microsoft Entra ID (mozilla-django-oidc).
+#
+# The browser is sent to /oidc/authenticate/ (Entra ID authorization code
+# flow); on /oidc/callback/ the ID token is verified against Entra's JWKS and
+# a server-side Django session is created. The SPA then exchanges that
+# session for an app access token (kept in memory only) plus a refresh token
+# that is ONLY ever stored in an HttpOnly cookie (see AUTH_REFRESH_COOKIE_*),
+# never in localStorage. Unauthenticated API calls get HTTP 401 and the SPA
+# redirects the browser to the identity provider.
+#
+# OIDC_ISSUER is the Entra v2.0 issuer, i.e.
+# https://login.microsoftonline.com/<tenant-id>/v2.0 - endpoints are derived
+# from it and can each be overridden explicitly.
+# ---------------------------------------------------------------------------
+AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",
+    "apps.accounts.views.EntraOIDCAuthenticationBackend",
+]
+
+OIDC_ISSUER = config("OIDC_ISSUER", default="")
+_OIDC_AUTHORITY = OIDC_ISSUER.rstrip("/").removesuffix("/v2.0")
+
+OIDC_RP_CLIENT_ID = config("OIDC_CLIENT_ID", default="")
+OIDC_RP_CLIENT_SECRET = config("OIDC_CLIENT_SECRET", default="")
+OIDC_RP_SIGN_ALGO = "RS256"
+OIDC_RP_SCOPES = "openid email profile"
+OIDC_OP_AUTHORIZATION_ENDPOINT = config(
+    "OIDC_OP_AUTHORIZATION_ENDPOINT", default=f"{_OIDC_AUTHORITY}/oauth2/v2.0/authorize"
+)
+OIDC_OP_TOKEN_ENDPOINT = config(
+    "OIDC_OP_TOKEN_ENDPOINT", default=f"{_OIDC_AUTHORITY}/oauth2/v2.0/token"
+)
+OIDC_OP_JWKS_ENDPOINT = config(
+    "OIDC_OP_JWKS_ENDPOINT", default=f"{_OIDC_AUTHORITY}/discovery/v2.0/keys"
+)
+OIDC_OP_USER_ENDPOINT = config(
+    "OIDC_OP_USER_ENDPOINT", default="https://graph.microsoft.com/oidc/userinfo"
+)
+OIDC_STORE_ID_TOKEN = False
+
+LOGIN_URL = "oidc_authentication_init"
+# Where the browser lands after a successful/failed Entra sign-in (the SPA).
+LOGIN_REDIRECT_URL = config("OIDC_LOGIN_REDIRECT_URL", default="http://localhost:5173/")
+LOGIN_REDIRECT_URL_FAILURE = config("OIDC_LOGIN_REDIRECT_URL_FAILURE", default=LOGIN_REDIRECT_URL)
+LOGOUT_REDIRECT_URL = config("OIDC_LOGOUT_REDIRECT_URL", default=LOGIN_REDIRECT_URL)
+
+SESSION_COOKIE_HTTPONLY = True
+
+# Refresh token transport: HttpOnly + Secure + SameSite cookie, scoped to the
+# auth endpoints only. Never exposed to JavaScript.
+AUTH_REFRESH_COOKIE_NAME = config("AUTH_REFRESH_COOKIE_NAME", default="ccf_refresh")
+AUTH_REFRESH_COOKIE_PATH = "/api/auth/"
+AUTH_REFRESH_COOKIE_SECURE = config("AUTH_REFRESH_COOKIE_SECURE", default=True, cast=bool)
+AUTH_REFRESH_COOKIE_SAMESITE = config("AUTH_REFRESH_COOKIE_SAMESITE", default="Lax")
 
 CORS_ALLOWED_ORIGINS = config(
     "CORS_ALLOWED_ORIGINS",
