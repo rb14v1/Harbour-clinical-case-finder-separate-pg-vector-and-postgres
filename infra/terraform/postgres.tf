@@ -3,8 +3,8 @@
 # Replaces the docker-compose `postgres` container (local named volume, no
 # backups) for deployed environments with Azure Database for PostgreSQL
 # Flexible Server, which provides:
-#   - automated daily backups, retained for 30 days (backup_retention_days)
-#   - point-in-time recovery (PITR) to any second inside that 30-day window
+#   - automated daily backups, retained for 35 days (backup_retention_days)
+#   - point-in-time recovery (PITR) to any second inside that 35-day window
 #   - geo-redundant backup storage, replicated to the Azure paired region so
 #     a backup survives loss of the primary region
 #
@@ -75,7 +75,7 @@ variable "postgres_storage_mb" {
 variable "backup_retention_days" {
   description = "Automated backup and PITR retention in days. Must be at least 30 (compliance requirement rel.backup_configured); Azure allows at most 35."
   type        = number
-  default     = 30
+  default     = 35
 
   validation {
     condition     = var.backup_retention_days >= 30 && var.backup_retention_days <= 35
@@ -101,7 +101,7 @@ resource "azurerm_postgresql_flexible_server" "main" {
   administrator_login    = var.postgres_admin_login
   administrator_password = var.postgres_admin_password
 
-  # Automated backups + PITR window (30 days minimum).
+  # Automated backups + PITR window (30 days minimum, 35 by default).
   backup_retention_days = var.backup_retention_days
 
   # Copy backups to the Azure paired region (separate region from the
