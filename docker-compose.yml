@@ -7,7 +7,7 @@
 # Celery/Redis: there is no background/async work to run.
 services:
   postgres:
-    image: postgres:16
+    image: postgres:18
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-clinical_case_finder}
       POSTGRES_USER: ${POSTGRES_USER:-clinical_case_finder}
