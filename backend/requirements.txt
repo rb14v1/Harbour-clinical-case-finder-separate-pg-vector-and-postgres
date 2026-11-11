@@ -6,7 +6,7 @@ Django>=5.2.11,<5.3
 djangorestframework>=3.16.1,<4
 djangorestframework-simplejwt==5.3.1
 psycopg2-binary==2.9.9
-django-cors-headers==4.4.0
+django-cors-headers==4.9.0
 django-filter==24.3
 python-decouple==3.8
 # OIDC login against Microsoft Entra ID (see OIDC_* in config/settings/base.py)
