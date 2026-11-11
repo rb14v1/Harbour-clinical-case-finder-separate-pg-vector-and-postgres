@@ -5,6 +5,8 @@ psycopg2-binary==2.9.9
 django-cors-headers==4.4.0
 django-filter==24.3
 python-decouple==3.8
+# OIDC login against Microsoft Entra ID (see OIDC_* in config/settings/base.py)
+mozilla-django-oidc==4.0.1
 
 # Vector database (see apps/common/qdrant_store.py). In dev/test mode
 # (QDRANT_URL unset) this runs Qdrant's embedded ":memory:" engine in-process
