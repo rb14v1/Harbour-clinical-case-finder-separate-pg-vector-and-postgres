@@ -1,4 +1,4 @@
-# Serves components: backend-api, web
+# Serves components: backend, frontend
 terraform {
   required_providers {
     azurerm = {
