@@ -9,8 +9,8 @@ Database for PostgreSQL Flexible Server), provisioned by
 | Setting | Value | Where |
 |---|---|---|
 | Automated backups | Daily full backups plus continuous WAL backups (Azure managed) | built in to Flexible Server |
-| Retention | 30 days (`backup_retention_days`, validated as 30–35) | `infra/terraform/postgres.tf` |
-| Point-in-time recovery | Any point inside the 30-day retention window | built in to Flexible Server |
+| Retention | 35 days (`backup_retention_days`, validated as 30–35) | `infra/terraform/postgres.tf` |
+| Point-in-time recovery | Any point inside the 35-day retention window | built in to Flexible Server |
 | Off-region copy | Geo-redundant backup storage in the Azure paired region (`geo_redundant_backup_enabled = true`) | `infra/terraform/postgres.tf` |
 
 Note: `geo_redundant_backup_enabled` can only be set when the server is
@@ -72,7 +72,7 @@ Use this for accidental deletes, a bad migration, or data corruption.
 6. **Run smoke checks.** Log in, list encounters, and run "Find similar
    cases" on one encounter.
 7. **Clean up.** Once the restored server is confirmed as the new
-   primary, check that it has the same backup settings (30-day retention,
+   primary, check that it has the same backup settings (35-day retention,
    geo-redundant). Then decommission the old server.
 
 ## Procedure B: geo-restore (primary region lost)
