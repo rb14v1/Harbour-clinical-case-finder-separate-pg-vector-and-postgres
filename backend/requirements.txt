@@ -15,7 +15,7 @@ qdrant-client==1.12.0
 # Without a key the app runs fully offline on a deterministic stub embedding.
 openai==1.54.4
 
-gunicorn==23.0.0
+gunicorn==26.2.0
 
 # dev/test only (fine to keep in the single requirements file for this
 # demo app; split into base/dev/prod requirement files if this grows)
