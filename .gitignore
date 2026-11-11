@@ -1,0 +1,15 @@
+# Backend
+backend/venv/
+backend/dev-sqlite.db
+backend/staticfiles/
+backend/__pycache__/
+**/__pycache__/
+*.pyc
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/*.tsbuildinfo
+
+# Env
+.env

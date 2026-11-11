@@ -1,0 +1,71 @@
+# Clinical Case Similarity Finder - Django + React, with TWO separate
+# databases: plain Postgres (relational data: users, patients, encounters)
+# and Qdrant (vector search over encounter embeddings). Unlike this
+# project's earlier "AI apps" (doc-search, faq-chatbot, job-matcher,
+# product-recommender, ticket-triage, recipe-finder), there is no pgvector
+# extension here - Postgres never stores embeddings at all. Deliberately no
+# Celery/Redis: there is no background/async work to run.
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-clinical_case_finder}
+      POSTGRES_USER: ${POSTGRES_USER:-clinical_case_finder}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-clinical_case_finder}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-clinical_case_finder}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    volumes:
+      - qdrant_data:/qdrant/storage
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+
+  backend:
+    build:
+      context: ./backend
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - ./backend:/app
+    env_file: .env
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.dev
+      USE_SQLITE: "False"
+      POSTGRES_HOST: postgres
+      QDRANT_URL: http://qdrant:6333
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+
+  frontend:
+    build:
+      context: ./frontend
+      target: dev
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      VITE_API_BASE_URL: http://localhost:8000/api
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  qdrant_data:
