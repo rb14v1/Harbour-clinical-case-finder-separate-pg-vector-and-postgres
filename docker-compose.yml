@@ -25,7 +25,7 @@ services:
   qdrant:
     # Pinned to an explicit release (matches qdrant-client 1.12.x) instead of
     # the mutable `latest` tag; Dependabot (docker-compose ecosystem) bumps it.
-    image: qdrant/qdrant:v1.12.6
+    image: qdrant/qdrant:v1.20.0
     volumes:
       - qdrant_data:/qdrant/storage
     ports:
