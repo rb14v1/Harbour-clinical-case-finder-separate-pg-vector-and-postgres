@@ -22,8 +22,8 @@ provider "azurerm" {
 
 resource "azurerm_postgresql_flexible_server" "postgresql" {
   tags = var.common_tags
-  name                   = "psql-clinical-case"
-  resource_group_name    = "clinical-case"
+  name                   = "psql-clinc-similar-har"
+  resource_group_name    = "clinc-similar-har"
   location               = "uksouth"
   version                = "16"
   sku_name               = "B_Standard_B1ms"
@@ -58,7 +58,7 @@ data "azurerm_private_dns_zone" "postgresql_dns_zone" {
 
 resource "azurerm_private_dns_zone_virtual_network_link" "postgresql_dns_zone_link" {
   tags = var.common_tags
-  name                  = "link-clinical-case"
+  name                  = "link-clinc-similar-har"
   resource_group_name   = var.hub_resource_group
   private_dns_zone_name = data.azurerm_private_dns_zone.postgresql_dns_zone.name
   virtual_network_id    = var.vnet_id
@@ -66,8 +66,8 @@ resource "azurerm_private_dns_zone_virtual_network_link" "postgresql_dns_zone_li
 
 resource "azurerm_private_endpoint" "postgresql_pe" {
   tags = var.common_tags
-  name                = "pe-psql-clinical-case"
-  resource_group_name = "clinical-case"
+  name                = "pe-psql-clinc-similar-har"
+  resource_group_name = "clinc-similar-har"
   location            = "uksouth"
   subnet_id           = var.subnet_id
 
@@ -86,8 +86,8 @@ resource "azurerm_private_endpoint" "postgresql_pe" {
 
 resource "azurerm_search_service" "search" {
   tags = var.common_tags
-  name                = "search-clinical-case"
-  resource_group_name = "clinical-case"
+  name                = "search-clinc-similar-har"
+  resource_group_name = "clinc-similar-har"
   location            = "uksouth"
   sku                 = "basic"
   public_network_access_enabled = false
@@ -100,7 +100,7 @@ data "azurerm_private_dns_zone" "search_dns_zone" {
 
 resource "azurerm_private_dns_zone_virtual_network_link" "search_dns_zone_link" {
   tags = var.common_tags
-  name                  = "link-clinical-case"
+  name                  = "link-clinc-similar-har"
   resource_group_name   = var.hub_resource_group
   private_dns_zone_name = data.azurerm_private_dns_zone.search_dns_zone.name
   virtual_network_id    = var.vnet_id
@@ -108,8 +108,8 @@ resource "azurerm_private_dns_zone_virtual_network_link" "search_dns_zone_link" 
 
 resource "azurerm_private_endpoint" "search_pe" {
   tags = var.common_tags
-  name                = "pe-search-clinical-case"
-  resource_group_name = "clinical-case"
+  name                = "pe-search-clinc-similar-har"
+  resource_group_name = "clinc-similar-har"
   location            = "uksouth"
   subnet_id           = var.subnet_id
 
