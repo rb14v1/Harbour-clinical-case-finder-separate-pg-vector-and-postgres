@@ -14,8 +14,9 @@ export function register(data: {
   return apiClient.post<User>("/auth/register/", data);
 }
 
-export function logout(refresh: string) {
-  return apiClient.post("/auth/logout/", { refresh });
+// The refresh token is sent by the browser as an HttpOnly cookie.
+export function logout() {
+  return apiClient.post("/auth/logout/", {});
 }
 
 export function fetchMe() {
