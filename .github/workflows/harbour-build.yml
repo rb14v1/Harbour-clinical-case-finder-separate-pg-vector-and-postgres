@@ -1,0 +1,47 @@
+name: Harbour Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["master"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        component: ["backend", "frontend"]
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      - name: Log in to Azure Container Registry
+        run: az acr login --name ${{ secrets.ACR_NAME }}
+      - name: Determine Dockerfile path
+        id: dockerfile
+        run: |
+          if [ -f "./${{ matrix.component }}/Dockerfile" ]; then
+            echo "path=./${{ matrix.component }}/Dockerfile" >> $GITHUB_OUTPUT
+            echo "context=./${{ matrix.component }}" >> $GITHUB_OUTPUT
+          elif [ -f "./Dockerfile.${{ matrix.component }}" ]; then
+            echo "path=./Dockerfile.${{ matrix.component }}" >> $GITHUB_OUTPUT
+            echo "context=." >> $GITHUB_OUTPUT
+          else
+            echo "ERROR: No Dockerfile found for ${{ matrix.component }}" >&2
+            exit 1
+          fi
+      - name: Lowercase the image repository
+        id: repo
+        run: echo "name=${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+      - uses: docker/build-push-action@v6
+        with:
+          build-args: ${{ matrix.component == 'frontend' && 'VITE_API_BASE_URL=https://clinical-case-backend.calmtree-257bdea5.uksouth.azurecontainerapps.io/api' || '' }}
+          context: ${{ steps.dockerfile.outputs.context }}
+          file: ${{ steps.dockerfile.outputs.path }}
+          push: true
+          tags: |
+            ${{ secrets.ACR_NAME }}.azurecr.io/${{ steps.repo.outputs.name }}:${{ matrix.component }}-latest
+            ${{ secrets.ACR_NAME }}.azurecr.io/${{ steps.repo.outputs.name }}:${{ matrix.component }}-${{ github.sha }}
