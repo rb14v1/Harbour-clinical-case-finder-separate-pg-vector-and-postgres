@@ -2,11 +2,15 @@ import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api";
 
+// Entra ID sign-in entry point on the backend (mozilla-django-oidc).
+const OIDC_LOGIN_URL =
+  import.meta.env.VITE_OIDC_LOGIN_URL || `${API_BASE_URL.replace(/\/api\/?$/, "")}/oidc/authenticate/`;
+
 // Access token lives only in memory (module-level variable), never
-// localStorage, to limit XSS blast radius. Refresh token is kept in
-// localStorage for this demo (a real deployment would use an httpOnly
-// cookie set by the backend instead) - this is a dev-only trade-off, same
-// as the sibling apps in this workspace.
+// localStorage, to limit XSS blast radius. The refresh token is never
+// visible to JavaScript: the backend keeps it in an HttpOnly, Secure,
+// SameSite cookie scoped to /api/auth/, which the browser sends along with
+// credentialed requests.
 let accessToken: string | null = null;
 
 export function setAccessToken(token: string | null) {
@@ -17,22 +21,13 @@ export function getAccessToken() {
   return accessToken;
 }
 
-const REFRESH_TOKEN_KEY = "clinical_case_finder_refresh_token";
-
-export function setRefreshToken(token: string | null) {
-  if (token) {
-    localStorage.setItem(REFRESH_TOKEN_KEY, token);
-  } else {
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
-  }
-}
-
-export function getRefreshToken() {
-  return localStorage.getItem(REFRESH_TOKEN_KEY);
+export function redirectToIdentityProvider() {
+  window.location.assign(OIDC_LOGIN_URL);
 }
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
+  withCredentials: true,
 });
 
 apiClient.interceptors.request.use((config) => {
@@ -45,23 +40,28 @@ apiClient.interceptors.request.use((config) => {
 
 let refreshPromise: Promise<string | null> | null = null;
 
-async function refreshAccessToken(): Promise<string | null> {
-  const refresh = getRefreshToken();
-  if (!refresh) return null;
+// Obtains a fresh access token from the HttpOnly refresh cookie, or - right
+// after an Entra ID sign-in - from the backend's server-side OIDC session.
+export async function refreshAccessToken(): Promise<string | null> {
   try {
-    const response = await axios.post(`${API_BASE_URL}/auth/refresh/`, { refresh });
+    const response = await axios.post(`${API_BASE_URL}/auth/refresh/`, {}, { withCredentials: true });
     const newAccess = response.data.access as string;
     setAccessToken(newAccess);
-    if (response.data.refresh) {
-      setRefreshToken(response.data.refresh);
-    }
     return newAccess;
   } catch {
-    setAccessToken(null);
-    setRefreshToken(null);
-    return null;
+    try {
+      const response = await axios.get(`${API_BASE_URL}/auth/oidc/token/`, { withCredentials: true });
+      const newAccess = response.data.access as string;
+      setAccessToken(newAccess);
+      return newAccess;
+    } catch {
+      setAccessToken(null);
+      return null;
+    }
   }
 }
+
+const CREDENTIAL_ENDPOINTS = ["/auth/login/", "/auth/register/"];
 
 interface RetriableConfig extends InternalAxiosRequestConfig {
   _retry?: boolean;
@@ -72,7 +72,9 @@ apiClient.interceptors.response.use(
   async (error: AxiosError) => {
     const originalRequest = error.config as RetriableConfig | undefined;
 
-    if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
+    const isCredentialRequest = CREDENTIAL_ENDPOINTS.some((path) => originalRequest?.url?.includes(path));
+
+    if (error.response?.status === 401 && originalRequest && !originalRequest._retry && !isCredentialRequest) {
       originalRequest._retry = true;
 
       if (!refreshPromise) {
@@ -88,7 +90,8 @@ apiClient.interceptors.response.use(
         return apiClient(originalRequest);
       }
 
-      window.location.assign("/login");
+      // Unauthenticated: send the browser to the identity provider.
+      redirectToIdentityProvider();
     }
 
     return Promise.reject(error);

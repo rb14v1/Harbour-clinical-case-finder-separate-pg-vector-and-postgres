@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
 import { fetchMe, login as apiLogin, logout as apiLogout, register as apiRegister } from "../api/auth";
-import { getRefreshToken, setAccessToken, setRefreshToken } from "../api/client";
+import { refreshAccessToken, setAccessToken } from "../api/client";
 import type { User } from "../types";
 
 interface AuthContextValue {
@@ -19,23 +19,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const refresh = getRefreshToken();
-    if (!refresh) {
-      setLoading(false);
-      return;
-    }
-    fetchMe()
-      .then((res) => setUser(res.data))
+    // Restore the session from the HttpOnly refresh cookie or the backend's
+    // Entra ID OIDC session - nothing is read from browser storage.
+    refreshAccessToken()
+      .then(async (token) => {
+        if (!token) return;
+        const res = await fetchMe();
+        setUser(res.data);
+      })
       .catch(() => {
-        setRefreshToken(null);
+        setAccessToken(null);
       })
       .finally(() => setLoading(false));
   }, []);
 
   async function login(email: string, password: string): Promise<User> {
     const response = await apiLogin(email, password);
+    // The refresh token is set by the backend as an HttpOnly cookie.
     setAccessToken(response.data.access);
-    setRefreshToken(response.data.refresh);
     const me = await fetchMe();
     setUser(me.data);
     return me.data;
@@ -47,12 +48,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   function logout() {
-    const refresh = getRefreshToken();
-    if (refresh) {
-      apiLogout(refresh).catch(() => undefined);
-    }
-    setAccessToken(null);
-    setRefreshToken(null);
+    // Backend blacklists the refresh cookie, clears it and ends the OIDC session.
+    apiLogout()
+      .catch(() => undefined)
+      .finally(() => setAccessToken(null));
     setUser(null);
   }
 
