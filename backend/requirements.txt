@@ -19,5 +19,5 @@ gunicorn==23.0.0
 
 # dev/test only (fine to keep in the single requirements file for this
 # demo app; split into base/dev/prod requirement files if this grows)
-pytest==8.3.3
+pytest==9.2.0
 pytest-django==4.9.0
