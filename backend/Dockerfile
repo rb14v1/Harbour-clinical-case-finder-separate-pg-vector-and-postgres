@@ -14,6 +14,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-EXPOSE 8000
+EXPOSE 8080
 
-CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000"]
+RUN useradd --system --uid 10001 --no-create-home app
+RUN chown -R app:app /app
+USER app
+CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8080"]
