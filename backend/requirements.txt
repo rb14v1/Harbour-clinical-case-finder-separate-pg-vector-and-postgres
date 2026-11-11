@@ -1,5 +1,9 @@
-Django==5.2.8
-djangorestframework==3.16.1
+# Security: floor-pinned to patched releases (sec.no_critical_cves). Django stays
+# on the 5.2 LTS line but must be >=5.2.11 (fixes CVE-2025-13372, CVE-2026-1207,
+# CVE-2026-1287 and later 5.2.x security releases); DRF resolves to the latest
+# patched release.
+Django>=5.2.11,<5.3
+djangorestframework>=3.16.1,<4
 djangorestframework-simplejwt==5.3.1
 psycopg2-binary==2.9.9
 django-cors-headers==4.4.0
